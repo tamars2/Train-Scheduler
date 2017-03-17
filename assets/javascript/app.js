@@ -15,14 +15,15 @@ $(document).ready(function() {
   var destination = "";
   var trainTime = "";
   var frequency = 0;
-
+  //when the submit button is clicked
   $('#add-train').on("click", function(event){
     event.preventDefault();
+    //store form input values as strings to global variables
     trainName = $('#train-name').val().trim();
     destination = $('#destination-input').val().trim();
     trainTime = $('#time-input').val().trim();
     frequency = $('#frequency-input').val().trim();
-    //store var values to firebase
+    //send variable values to firebase
     database.ref('/trains').push({
       trainName: trainName,
       destination: destination,
@@ -32,23 +33,27 @@ $(document).ready(function() {
     });
   });
 
-
+//if a child has been added, write train statistics to the table
 database.ref('/trains').on("child_added", function(childSnapshot){
+  //local variable to manipulate with moment.js
   var train = childSnapshot.val().trainName;
   var dest = childSnapshot.val().destination;
   var time = childSnapshot.val().trainTime;
   var freq = childSnapshot.val().frequency;
-  var dateAdded = childSnapshot.val().dateAdded;
-  var currentTime = moment();
-  var timeConversion = moment(time, "hh:mm").subtract(1, "years");
-  
-  var diffTime = moment().diff(moment(timeConversion), "minutes");
+  var currentTime = moment().format("HH:mm");
+  //convert time to ensure that the first train time has happened in the past
+  var convertedTime = moment(time, "HH:mm").subtract(1, "years");
+  //determine difference in time in ms
+  var diffTime = moment().diff(moment(convertedTime), "minutes");
+  //determine how far apart in time
   var remainder = diffTime % freq;
-  var minutesRemaining = freq - remainder;
-  var nextTrainTime = moment().add(minutesRemaining, "minutes");
-  //next arrival = first time + frequency
-
-  $('#trains').append("<tr><td>" + train + "</td><td>" + dest + "</td><td>" + freq + "</td><td>" + nextTrainTime + "</td><td>" + minutesRemaining + "</td>");
+  //determine how many minutes until the next arrival
+  var minutesUntilArrival = freq - remainder;
+  var nextTrain = moment().add(minutesUntilArrival, "minutes");
+  //determine the arrival time of the next train
+  var arrival = moment(nextTrain).format("HH:mm");
+  //write all this data to the table
+  $('#trains').append("<tr><td>" + train + "</td><td>" + dest + "</td><td>" + freq + "</td><td>" + arrival + "</td><td>" + minutesUntilArrival + "</td>");
  
-});
+  });
 });
